@@ -32,6 +32,8 @@ import time
 import re
 import sys
 
+from mylog import mylog
+
 from google.cloud import speech
 
 import pyaudio
@@ -41,6 +43,17 @@ from six.moves import queue
 STREAMING_LIMIT = 55000
 SAMPLE_RATE = 16000
 CHUNK_SIZE = int(SAMPLE_RATE / 10)  # 100ms
+
+"""
+16 bit sample = 2 bytes per sample
+chunk size = 1600 samples
+chunk size = 3200 bytes
+
+16000 "samples" per second
+32000 bytes per second
+10 chunks per second
+600 chunks per minute
+"""
 
 
 def get_current_time():
@@ -72,7 +85,9 @@ class ResumableMicrophoneStream:
         self._chunks_per_second = (
                 self._bytes_per_second // self._bytes_per_chunk)
 
-    def __enter__(self):
+        self.chunks_added = 0
+
+    def enter(self):
         self.closed = False
 
         self._audio_interface = pyaudio.PyAudio()
@@ -88,9 +103,11 @@ class ResumableMicrophoneStream:
             stream_callback=self._fill_buffer,
         )
 
+    def __enter__(self):
+        self.enter()
         return self
 
-    def __exit__(self, type, value, traceback):
+    def exit(self):
         self._audio_stream.stop_stream()
         self._audio_stream.close()
         self.closed = True
@@ -99,14 +116,20 @@ class ResumableMicrophoneStream:
         self._buff.put(None)
         self._audio_interface.terminate()
 
+    def __exit__(self, type, value, traceback):
+        self.exit()
+
     def _fill_buffer(self, in_data, *args, **kwargs):
         """Continuously collect data from the audio stream, into the buffer."""
+        mylog.debug(f"Adding {self.chunks_added} into data")
         self._buff.put(in_data)
+        self.chunks_added = self.chunks_added + 1
         return None, pyaudio.paContinue
 
     def generator(self):
         while not self.closed:
             if get_current_time() - self.start_time > STREAMING_LIMIT:
+                mylog.debug("STREAMING LIMIT ELAPSED")
                 self.start_time = get_current_time()
                 break
             # Use a blocking get() to ensure there's at least one chunk of
@@ -114,6 +137,7 @@ class ResumableMicrophoneStream:
             # end of the audio stream.
             chunk = self._buff.get()
             if chunk is None:
+                mylog.debug("CHUNK IS NONE")
                 return
             data = [chunk]
 
@@ -190,13 +214,20 @@ def listen_print_loop(responses, stream):
 
 
 def main():
+    mylog.init()
+    mylog.add_stdout(fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
+    mylog.add_file(filepath = 'output.log',
+            fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
+
     client = speech.SpeechClient()
+
     config = speech.types.RecognitionConfig(
         encoding=speech.enums.RecognitionConfig.AudioEncoding.LINEAR16,
         sample_rate_hertz=SAMPLE_RATE,
         language_code='en-US',
         max_alternatives=1,
         enable_word_time_offsets=True)
+
     streaming_config = speech.types.StreamingRecognitionConfig(
         config=config,
         interim_results=True)
@@ -205,17 +236,26 @@ def main():
 
     print('Say "Quit" or "Exit" to terminate the program.')
 
-    with mic_manager as stream:
-        while not stream.closed:
-            audio_generator = stream.generator()
-            requests = (speech.types.StreamingRecognizeRequest(
-                audio_content=content)
-                for content in audio_generator)
+    # with mic_manager as stream:
+    stream = mic_manager
+    stream.enter()
 
-            responses = client.streaming_recognize(streaming_config,
-                                                   requests)
-            # Now, put the transcription responses to use.
-            listen_print_loop(responses, stream)
+    while not stream.closed:
+        audio_generator = stream.generator()
+        mylog.debug(f"audio_generator = {type(audio_generator)}")
+
+        requests = (speech.types.StreamingRecognizeRequest(audio_content=content)
+            for content in audio_generator)
+        mylog.debug(f"requests = {type(requests)}")
+
+        responses = client.streaming_recognize(streaming_config,
+                                               requests)
+        mylog.debug(f"responses = {type(responses)}")
+
+        # Now, put the transcription responses to use.
+        listen_print_loop(responses, stream)
+
+    stream.exit()
 
 
 if __name__ == '__main__':
