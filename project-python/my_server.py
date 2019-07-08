@@ -8,30 +8,44 @@ import io
 import threading
 import queue
 import struct
+from mylog import mylog
 
-def server(websocket, path):
+async def server(websocket, path):
 
   # Wait for only 10 messages from websocket client
   count = 0
-  while count < 10:
+  while True:
     try:
-      data = yield from websocket.recv()
+      data = await websocket.recv()
+    except websockets.ConnectionClosed:
+      mylog.debug("Thank you good bye")
+      break
     except Exception as e:
-      print(str(e))
+      mylog.debug(str(e))
 
-    print(f"data len = {len(data)}")
-    print(f"data type = {type(data)}")
-    print(f"data = {data}")
-    print("------------------------")
-
-    print(isinstance(data, bytes))
-
-
-
+    mylog.debug(f"[{count:<5}] data type = {type(data)}")
+    count = count + 1
 
 def main():
-  asyncio.get_event_loop().run_until_complete( websockets.serve(server, '0.0.0.0', 9000) )
-  asyncio.get_event_loop().run_forever()
+  mylog.init()
+  mylog.init()
+  mylog.add_stdout(fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
+  mylog.add_file(filepath = 'output.log',
+          fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
+
+  loop = asyncio.get_event_loop()
+
+  try:
+    loop.run_until_complete( websockets.serve(server, '0.0.0.0', 9000) )
+    loop.run_forever()
+  except KeyboardInterrupt:
+    pass
+  except Exception as e:
+    mylog.debug(str(e))
+  finally:
+    mylog.debug("done")
+    loop.close()
+
 
 if __name__ == "__main__":
   main()
