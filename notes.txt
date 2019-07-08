@@ -48,3 +48,26 @@ streaming_recognize
 (google)
     takes streaming_config
     takes an iterator of StreamingRecognizeRequest(audio)
+
+
+# -----------------------------------------
+16 bit sample = 2 bytes per sample
+chunk size = 1600 samples (chosen by us, buffer size)
+chunk size = 3200 bytes (1 sample = 2 bytes so ..)
+
+16000 "samples" per second (recording rate)
+32000 bytes per second (based on 1 sample = 2 bytes above ..)
+10 chunks per second
+600 chunks per minute
+
+========================================================
+sample rate = 48000
+48000 "samples" per second
+16 bit sample = 2 bytes per sample
+48000 "samples /s == 96000 "bytes" per second
+chunk size = 4800 "samples"
+chunk size = 9600 "bytes"
+10 chunks per second
+
+
+
