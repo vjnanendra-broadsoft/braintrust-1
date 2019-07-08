@@ -9,7 +9,7 @@ mylog.init(logname = "custom")
 Add your end points
 mylog.add_stdout(fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
 mylog.add_stderr()
-mylog.add_file('/path/to/file')
+mylog.add_file(filepath = '/path/to/file')
 
 Add with custom formatter
 mylog.add_stdout(fmt = '%(message)s', tfmt = "%H:%M:%S")
