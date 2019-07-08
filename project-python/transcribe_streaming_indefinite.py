@@ -121,7 +121,7 @@ class ResumableMicrophoneStream:
 
     def _fill_buffer(self, in_data, *args, **kwargs):
         """Continuously collect data from the audio stream, into the buffer."""
-        mylog.debug(f"Adding {self.chunks_added} into data")
+        # mylog.debug(f"Adding {self.chunks_added} into data")
         self._buff.put(in_data)
         self.chunks_added = self.chunks_added + 1
         return None, pyaudio.paContinue
@@ -129,7 +129,7 @@ class ResumableMicrophoneStream:
     def generator(self):
         while not self.closed:
             if get_current_time() - self.start_time > STREAMING_LIMIT:
-                mylog.debug("STREAMING LIMIT ELAPSED")
+                # mylog.debug("STREAMING LIMIT ELAPSED")
                 self.start_time = get_current_time()
                 break
             # Use a blocking get() to ensure there's at least one chunk of
