@@ -1,0 +1,50 @@
+client = speech.speechClient()
+
+
+# -----------------------------------------
+(google)
+config = speech.types.RecognitionConfig()
+    encoding
+    sample_rate_hertz
+    language_code
+    max_alternatives
+    enable_word_time_offsets
+
+(cb)
+    encoding
+    sample_rate_hertz
+    language_code
+
+
+# -----------------------------------------
+
+(google)
+streaming_config = StreamingRecognitionConfig()
+    RecognitionConfig object
+    interm_results
+
+
+# -----------------------------------------
+
+(cb)
+StreamingRequest class
+
+first time, returns StreamingRecognizeRequest
+    with just streaming_config = self.config
+
+
+subsequently, returns StreamingRecognizeRequest
+    with audio_content = data
+
+
+(google)
+    return StreamingRecognizeRequest
+        with audio_content = data
+
+
+
+# -----------------------------------------
+streaming_recognize
+(google)
+    takes streaming_config
+    takes an iterator of StreamingRecognizeRequest(audio)
