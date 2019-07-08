@@ -65,9 +65,10 @@ sample rate = 48000
 48000 "samples" per second
 16 bit sample = 2 bytes per sample
 48000 "samples /s == 96000 "bytes" per second
-chunk size = 4800 "samples"
-chunk size = 9600 "bytes"
-10 chunks per second
+chunk size = 4096 "samples"
+chunk size = 4096*2 "bytes" = 8192 bytes
+48000/4096 = 11.7 chunks per second
+
 
 
 
