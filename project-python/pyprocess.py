@@ -98,6 +98,7 @@ class WS_SERVER(object):
     while True:
       try:
         data = await websocket.recv()
+        # mylog.a.debug("Putting data in")
         self.queue.put(data)
       except websockets.ConnectionClosed:
         mylog.a.debug("Thank you good bye")
