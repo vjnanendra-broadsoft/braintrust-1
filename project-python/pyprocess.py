@@ -1,7 +1,6 @@
 #!env/bin/python
 # vim: sw=2 ts=2 sts=2 fdm=marker
 
-from mylog import mylog
 from multiprocessing import Process, Queue
 from google.cloud import speech
 
@@ -10,6 +9,7 @@ import websockets
 import sys
 import os
 import time
+import mylog
 
 
 ENCODING = speech.enums.RecognitionConfig.AudioEncoding.LINEAR16
@@ -100,12 +100,12 @@ class WS_SERVER(object):
         data = await websocket.recv()
         self.queue.put(data)
       except websockets.ConnectionClosed:
-        mylog.debug("Thank you good bye")
+        mylog.a.debug("Thank you good bye")
         break
       except Exception as e:
-        mylog.debug(str(e))
+        mylog.a.debug(str(e))
 
-      # mylog.debug(f"[{count:<5}] data type = {type(data)}")
+      # mylog.a.debug(f"[{count:<5}] data type = {type(data)}")
       count = count + 1
 
   def start(self):
@@ -116,46 +116,56 @@ class WS_SERVER(object):
 
 class TRANSCODER(object):
   def __init__(self, queue):
+    # {{{
     self.queue = queue
+    self.chunks_given = 0
+    # }}}
 
   def generator(self):
     # {{{
-    mylog.debug("Started in generator")
-    while True:
-      mylog.debug("entered while true loop")
-      if get_current_time() - self.start_time > STREAMING_LIMIT:
-        mylog.debug("STREAMING LIMIT ELAPSED")
-        self.start_time = get_current_time()
-        break
-
-      mylog.debug("time limit is good. Blocking on queue get")
-
-      # Use a blocking get() to ensure there's at least one chunk of
-      # data, and stop iteration if the chunk is None, indicating the
-      # end of the audio stream.
-      chunk = self.queue.get()
-      mylog.debug("Queue item obtained")
-
-      if chunk is None:
-        mylog.debug("CHUNK IS NONE")
-        return
-      else:
-        mylog.debug(f"Picked up {type(chunk)} size {len(chunk)}")
+    mylog.a.debug("Started in generator")
+    if self.chunks_given > 300:
+      return
+    chunk = self.queue.get()
+    self.chunks_given = self.chunks_given + 1
+    yield chunk
 
 
-      data = [chunk]
+    #while True:
+    #  mylog.a.debug("entered while true loop")
+    #  if get_current_time() - self.start_time > STREAMING_LIMIT:
+    #    mylog.a.debug("STREAMING LIMIT ELAPSED")
+    #    self.start_time = get_current_time()
+    #    break
 
-      # Now consume whatever other data's still buffered.
-      while True:
-          try:
-              chunk = self.queue.get(block=False)
-              if chunk is None:
-                  return
-              data.append(chunk)
-          except self.queue.Empty:
-              break
+    #  mylog.a.debug("time limit is good. Blocking on queue get")
 
-      yield b''.join(data)
+    #  # Use a blocking get() to ensure there's at least one chunk of
+    #  # data, and stop iteration if the chunk is None, indicating the
+    #  # end of the audio stream.
+    #  chunk = self.queue.get()
+    #  mylog.a.debug("Queue item obtained")
+
+    #  if chunk is None:
+    #    mylog.a.debug("CHUNK IS NONE")
+    #    return
+    #  else:
+    #    mylog.a.debug(f"Picked up {type(chunk)} size {len(chunk)}")
+
+
+    #  data = [chunk]
+
+    #  # Now consume whatever other data's still buffered.
+    #  while True:
+    #      try:
+    #          chunk = self.queue.get(block=False)
+    #          if chunk is None:
+    #              return
+    #          data.append(chunk)
+    #      except self.queue.Empty:
+    #          break
+
+    #  yield b''.join(data)
         # }}}
 
   def start(self):
@@ -175,30 +185,29 @@ class TRANSCODER(object):
         interim_results=True)
 
     while True:
-      mylog.debug("Starting while True in transcoder")
+      mylog.a.debug("Starting while True in transcoder")
 
       audio_generator = self.generator()
-      for content in audio_generator:
-        print(f"{type(content)}")
 
-      """
+      mylog.a.debug("created audio_generator object")
+
       requests = (speech.types.StreamingRecognizeRequest(audio_content=content)
           for content in audio_generator)
-      mylog.debug(f"received some requests of type {type(requests)}")
 
+      mylog.a.debug("created requests object")
 
       responses = client.streaming_recognize(streaming_config, requests)
-      mylog.debug(f"received some repsonses of type {type(responses)}")
 
       listen_print_loop(responses)
-      """
+
       # }}}
 
 
 def main():
-  mylog.init()
-  mylog.add_stdout(fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
-  mylog.add_file(filepath = 'output.log', fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
+  mylog.a = mylog.mylog()
+  mylog.a.init()
+  mylog.a.add_stdout(fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
+  mylog.a.add_file(filepath = 'output.log', fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
 
   shared_q = Queue()
 
