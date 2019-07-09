@@ -34,7 +34,6 @@ def main():
           fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
 
   loop = asyncio.get_event_loop()
-
   try:
     loop.run_until_complete( websockets.serve(server, '0.0.0.0', 9000) )
     loop.run_forever()
