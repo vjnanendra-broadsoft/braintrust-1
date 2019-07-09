@@ -125,11 +125,16 @@ class TRANSCODER(object):
   def generator(self):
     # {{{
     mylog.a.debug("Started in generator")
-    if self.chunks_given > 300:
-      return
-    chunk = self.queue.get()
-    self.chunks_given = self.chunks_given + 1
-    yield chunk
+    chunks_given = 0
+
+    while True:
+      if chunks_given > 550:
+        break
+
+      chunk = self.queue.get()
+      mylog.a.debug(f"Gave chunk {chunks_given}")
+      chunks_given = chunks_given + 1
+      yield chunk
 
 
     #while True:
