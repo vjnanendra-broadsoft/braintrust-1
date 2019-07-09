@@ -39,7 +39,6 @@ DEF_TFMT = '%Y-%m-%d %H:%M:%S'
 class mylog:
   # {{{
 
-  @classmethod
   def init(self, logname=__name__, loglevel = logging.DEBUG):
     self.logger = logging.getLogger(logname)
     self.logger.setLevel(loglevel)
@@ -50,7 +49,6 @@ class mylog:
     self.error = self.logger.error
     self.critical = self.logger.critical
 
-  @classmethod
   def add_stderr(self, loglevel = logging.DEBUG, fmt = DEF_FMT, tfmt = DEF_TFMT):
     err_hdlr = logging.StreamHandler(sys.stderr)
     err_hdlr.setLevel(loglevel)
@@ -58,7 +56,6 @@ class mylog:
 
     self.logger.addHandler(err_hdlr)
 
-  @classmethod
   def add_stdout(self, loglevel = logging.DEBUG, fmt = DEF_FMT, tfmt = DEF_TFMT):
     out_hdlr = logging.StreamHandler(sys.stdout)
     out_hdlr.setLevel(loglevel)
@@ -66,7 +63,6 @@ class mylog:
 
     self.logger.addHandler(out_hdlr)
 
-  @classmethod
   def add_file(self, filepath, fmt = DEF_FMT, tfmt = DEF_TFMT):
     file_hdlr = logging.FileHandler(filepath)
     file_hdlr.setLevel(logging.DEBUG)
@@ -74,7 +70,6 @@ class mylog:
 
     self.logger.addHandler(file_hdlr)
 
-  @classmethod
   def setLevel(self,loglevel = logging.DEBUG):
     self.logger.setLevel(loglevel)
 
