@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# vim: fdm=marker
 
 # Copyright 2018 Google LLC
 #
@@ -44,18 +45,6 @@ STREAMING_LIMIT = 55000
 SAMPLE_RATE = 16000
 CHUNK_SIZE = int(SAMPLE_RATE / 10)  # 100ms
 
-"""
-16 bit sample = 2 bytes per sample
-chunk size = 1600 samples
-chunk size = 3200 bytes
-
-16000 "samples" per second
-32000 bytes per second
-10 chunks per second
-600 chunks per minute
-"""
-
-
 def get_current_time():
     return int(round(time.time() * 1000))
 
@@ -65,8 +54,10 @@ def duration_to_secs(duration):
 
 
 class ResumableMicrophoneStream:
+    # {{{
     """Opens a recording stream as a generator yielding the audio chunks."""
     def __init__(self, rate, chunk_size):
+        # {{{
         self._rate = rate
         self._chunk_size = chunk_size
         self._num_channels = 1
@@ -86,8 +77,10 @@ class ResumableMicrophoneStream:
                 self._bytes_per_second // self._bytes_per_chunk)
 
         self.chunks_added = 0
+        # }}}
 
     def enter(self):
+        # {{{
         self.closed = False
 
         self._audio_interface = pyaudio.PyAudio()
@@ -102,12 +95,10 @@ class ResumableMicrophoneStream:
             # overflow while the calling thread makes network requests, etc.
             stream_callback=self._fill_buffer,
         )
-
-    def __enter__(self):
-        self.enter()
-        return self
+         #}}}
 
     def exit(self):
+        # {{{
         self._audio_stream.stop_stream()
         self._audio_stream.close()
         self.closed = True
@@ -115,18 +106,19 @@ class ResumableMicrophoneStream:
         # streaming_recognize method will not block the process termination.
         self._buff.put(None)
         self._audio_interface.terminate()
-
-    def __exit__(self, type, value, traceback):
-        self.exit()
+        # }}}
 
     def _fill_buffer(self, in_data, *args, **kwargs):
+        # {{{
         """Continuously collect data from the audio stream, into the buffer."""
         # mylog.debug(f"Adding {self.chunks_added} into data")
         self._buff.put(in_data)
         self.chunks_added = self.chunks_added + 1
         return None, pyaudio.paContinue
+    # }}}
 
     def generator(self):
+        # {{{
         while not self.closed:
             if get_current_time() - self.start_time > STREAMING_LIMIT:
                 # mylog.debug("STREAMING LIMIT ELAPSED")
@@ -152,9 +144,18 @@ class ResumableMicrophoneStream:
                     break
 
             yield b''.join(data)
+            # }}}
 
+    def __enter__(self):
+        self.enter()
+        return self
+    def __exit__(self, type, value, traceback):
+        self.exit()
+
+# }}}
 
 def listen_print_loop(responses, stream):
+    # {{{
     """Iterates through server responses and prints them.
 
     The responses passed is a generator that will block until a response
@@ -211,7 +212,7 @@ def listen_print_loop(responses, stream):
                 break
 
             num_chars_printed = 0
-
+# }}}
 
 def main():
     mylog.init()

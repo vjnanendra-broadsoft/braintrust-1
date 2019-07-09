@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# vim: fdm=marker
 
 import asyncio
 import websockets
@@ -12,6 +13,7 @@ from google.cloud.gapic.speech.v1 import speech_client
 from google.cloud.proto.speech.v1 import cloud_speech_pb2
 
 class StreamingRequest(object):
+    # {{{
   """A Streaming Request iterable for speech api."""
 
   def __init__(self, audio_stream, config):
@@ -48,9 +50,10 @@ class StreamingRequest(object):
 
     return cloud_speech_pb2.StreamingRecognizeRequest(
             audio_content=data)
-
+# }}}
 
 def results_to_dict(results):
+    # {{{
   if results is None:
     return []
 
@@ -70,8 +73,10 @@ def results_to_dict(results):
       })
     output.append(r)
   return output
+# }}}
 
 class AudioStream(io.BytesIO):
+    # {{{
   """Read dumps latest unread written data."""
 
   def read(self, n=None):
@@ -83,9 +88,10 @@ class AudioStream(io.BytesIO):
     data = super(AudioStream, self).read(n)
     self._position += len(data)
     return data
-
+# }}}
 
 class Transcoder(object):
+# {{{
   """Streaming Transcodes chunks of audio to text."""
 
   def __init__(self, encoding, rate, language):
@@ -126,10 +132,11 @@ class Transcoder(object):
     # This will block until self.audio is closed...which closes the streaming_recognize req
     for resp in streaming_resp:
       self.results.put(resp)
-
+# }}}
 
 @asyncio.coroutine
 def audioin(websocket, path):
+    # {{{
 
   # First message should be config
   config = yield from websocket.recv()
@@ -160,6 +167,7 @@ def audioin(websocket, path):
     result_json = json.dumps(result_dict)
     print(result_dict)
     yield from websocket.send(result_json)
+# }}}
 
 
 start_server = websockets.serve(audioin, "0.0.0.0", 80)
