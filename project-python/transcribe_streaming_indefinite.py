@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!./env/bin/python3
 # vim: fdm=marker
 
 # Copyright 2018 Google LLC
@@ -33,7 +33,7 @@ import time
 import re
 import sys
 
-from mylog import mylog
+import mylog
 
 from google.cloud import speech
 
@@ -41,7 +41,7 @@ import pyaudio
 from six.moves import queue
 
 # Audio recording parameters
-STREAMING_LIMIT = 55000
+STREAMING_LIMIT = 25000
 SAMPLE_RATE = 16000
 CHUNK_SIZE = int(SAMPLE_RATE / 10)  # 100ms
 
@@ -111,14 +111,31 @@ class ResumableMicrophoneStream:
     def _fill_buffer(self, in_data, *args, **kwargs):
         # {{{
         """Continuously collect data from the audio stream, into the buffer."""
-        # mylog.debug(f"Adding {self.chunks_added} into data")
+        # mylog.a.debug(f"Adding {self.chunks_added} into data")
         self._buff.put(in_data)
-        self.chunks_added = self.chunks_added + 1
+        # self.chunks_added = self.chunks_added + 1
         return None, pyaudio.paContinue
     # }}}
 
     def generator(self):
         # {{{
+        chunks_given = 0
+        while not self.closed:
+            if chunks_given > 300:
+                mylog.a.debug("Starting over")
+                break
+
+            chunk = self._buff.get()
+            yield chunk
+
+            # data = [chunk]
+            # chunks_given = chunks_given + 1
+            # yield b''.join(data)
+            # }}}
+
+    def generator_old(self):
+        # {{{
+
         while not self.closed:
             if get_current_time() - self.start_time > STREAMING_LIMIT:
                 # mylog.debug("STREAMING LIMIT ELAPSED")
@@ -129,7 +146,7 @@ class ResumableMicrophoneStream:
             # end of the audio stream.
             chunk = self._buff.get()
             if chunk is None:
-                mylog.debug("CHUNK IS NONE")
+                mylog.a.debug("CHUNK IS NONE")
                 return
             data = [chunk]
 
@@ -144,7 +161,7 @@ class ResumableMicrophoneStream:
                     break
 
             yield b''.join(data)
-            # }}}
+        # }}}
 
     def __enter__(self):
         self.enter()
@@ -215,9 +232,10 @@ def listen_print_loop(responses, stream):
 # }}}
 
 def main():
-    mylog.init()
-    mylog.add_stdout(fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
-    mylog.add_file(filepath = 'output.log',
+    mylog.a = mylog.mylog()
+    mylog.a.init()
+    mylog.a.add_stdout(fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
+    mylog.a.add_file(filepath = 'output.log',
             fmt = '[%(asctime)s.%(msecs)03d] [%(lineno)3d] %(message)s', tfmt = "%H:%M:%S")
 
     client = speech.SpeechClient()
@@ -243,15 +261,15 @@ def main():
 
     while not stream.closed:
         audio_generator = stream.generator()
-        mylog.debug(f"audio_generator = {type(audio_generator)}")
+        mylog.a.debug(f"audio_generator = {type(audio_generator)}")
 
         requests = (speech.types.StreamingRecognizeRequest(audio_content=content)
             for content in audio_generator)
-        mylog.debug(f"requests = {type(requests)}")
+        mylog.a.debug(f"requests = {type(requests)}")
 
         responses = client.streaming_recognize(streaming_config,
                                                requests)
-        mylog.debug(f"responses = {type(responses)}")
+        mylog.a.debug(f"responses = {type(responses)}")
 
         # Now, put the transcription responses to use.
         listen_print_loop(responses, stream)
