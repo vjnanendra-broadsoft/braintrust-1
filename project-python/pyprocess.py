@@ -189,6 +189,9 @@ class TRANSCODER(object):
     streaming_config = speech.types.StreamingRecognitionConfig(
         config=config,
         interim_results=True)
+    
+    while self.queue.empty():
+      pass
 
     while True:
       mylog.a.debug("Starting while True in transcoder")
