@@ -207,6 +207,7 @@ class TRANSCODER(object):
 
       responses = client.streaming_recognize(streaming_config, requests)
 
+      mylog.a.debug("calling listen_print_loop")
       listen_print_loop(responses)
 
       # }}}
