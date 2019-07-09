@@ -48,11 +48,11 @@ var app = {
       var context = new window.AudioContext();
 
       // send metadata on audio stream to backend
-      this.socket.send(JSON.stringify({
-        rate: context.sampleRate,
-        language: "en-US",
-        format: "LINEAR16"
-      }));
+      //this.socket.send(JSON.stringify({
+      //  rate: context.sampleRate,
+      //  language: "en-US",
+      //  format: "LINEAR16"
+      //}));
 
       // Caputure mic audio data into a stream
       var audioInput = context.createMediaStreamSource(stream);
