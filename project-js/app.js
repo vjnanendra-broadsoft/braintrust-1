@@ -1,3 +1,4 @@
+
 /* eslint-env browser */
 
 /* global Webex */
@@ -63,6 +64,7 @@ function connect() {
     // Log messages from the server
     wsConnection.onmessage = function (e) {
       console.log('Server: ' + e.data);
+      document.getElementById('caption-text').innerHTML = e.data;
     };
     
   }
