@@ -95,18 +95,10 @@ var app = {
 
       var float32Audio = event.inputBuffer.getChannelData(0) || new Flaot32Array(this.bufferSize);
       var pcm16Audio = this.float32To16BitPCM(float32Audio);
-
-      /*
-      console.log(float32Audio);
-      console.log(float32Audio.buffer);
-      console.log(pcm16Audio);
-      console.log(pcm16Audio.buffer);
-      */
-
       this.socket.send(pcm16Audio.buffer);
 
   }
 };
-console.log("Getting started");
+
 app.main();
 
