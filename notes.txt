@@ -50,25 +50,74 @@ streaming_recognize
     takes an iterator of StreamingRecognizeRequest(audio)
 
 
-# -----------------------------------------
-16 bit sample = 2 bytes per sample
-chunk size = 1600 samples (chosen by us, buffer size)
-chunk size = 3200 bytes (1 sample = 2 bytes so ..)
+# Audio notes
 
-16000 "samples" per second (recording rate)
-32000 bytes per second (based on 1 sample = 2 bytes above ..)
-10 chunks per second
-600 chunks per minute
-
-========================================================
-sample rate = 48000
-48000 "samples" per second
-16 bit sample = 2 bytes per sample
-48000 "samples /s == 96000 "bytes" per second
-chunk size = 4096 "samples"
-chunk size = 4096*2 "bytes" = 8192 bytes
-48000/4096 = 11.7 chunks per second
+Google only allows "1 minute" of continous audio to be streamed for recognition
 
 
+Sample bit depth = 16 bit
+-- implies each "sample" is "2 bytes" long
 
+"Chunk"
+Chunks are "buffers", which hold a certain number of samples
+Chunks are used instead of continuous amount of audio because of the need for extra processing power
+We choose a custom chunk size.
+
+In the microphone code:
+Sample bit depth = 16 bit
+Sampling rate = 16000 samples per second
+Chunk size = 1600 "samples"
+
+Therefore,
+    we get 16000 samples every second from microphone
+    == 10 samples every second from microphone (since 1 chunk = 1600 samples)
+
+Since Google's limitation is 1 minute of audio
+    Once we send 1 minute in a continuous stream, we have to restart the stream
+    1 minute = 60 seconds
+    We get 10 samples every second from microphone
+    Therefore, once we have "sent" Google 600 samples, we need to restart the stream
+
+In WebAudio
+Sampling Rate = 48000 samples per second (hard coded value)
+Chunk size = Needs to be a power of 2
+
+
+
+
+
+==============================
+javascript API
+
+
+# Create a context
+# https://developer.mozilla.org/en-US/docs/Web/API/AudioContext
+var audioContext = new AudioContext();
+
+
+# The input is a Media Stream created from this context
+# https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/createMediaStreamSource
+var audioInput = context.createMediaStreamSource(stream);
+
+# in the microphone example stream comes from user media as below
+# https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia
+
+stream = navigator.mediaDevices.getUserMedia({"audio": true, "video": false}).
+
+# with webex, the stream comes from remote media (Webex SDK)
+stream = call.remoteMediaStream
+
+# create a recorder with a buffer (chunk size) , # of channels
+# Note: for audio we only need a single channel
+# https://developer.mozilla.org/en-US/docs/Web/API/BaseAudioContext/createScriptProcessor
+var recorder = context.createScriptProcessor(this.bufferSize, 1, 1);
+
+# Get data in the 'onaudioprocess' event
+var floatSamples = e.inputBuffer.getChannelData(0);
+
+# Note: The samples are floating point values in the range [-1, 1]
+# 
+
+
+==============================
 
