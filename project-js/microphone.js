@@ -6,8 +6,9 @@ var app = {
   counter: 0,
   bufferSize: 4096,
   main: function() {
-    // this.socket = new WebSocket("ws://10.78.98.103:9000");
-    this.socket = new WebSocket("ws://localhost:9000");
+    //this.socket = new WebSocket("ws://10.78.98.103:9000");
+    //this.socket = new WebSocket("ws://localhost:9000");
+    this.socket = new WebSocket("ws://34.93.249.245:9000");
     this.socket.addEventListener("open", this.onSocketOpen.bind(this));
     this.socket.addEventListener("message", this.onSocketMessage.bind(this));
   },
