@@ -132,7 +132,7 @@ class TRANSCODER(object):
         break
 
       chunk = self.queue.get()
-      mylog.a.debug(f"Gave chunk {chunks_given}")
+      # mylog.a.debug(f"Gave chunk {chunks_given}")
       chunks_given = chunks_given + 1
       yield chunk
 
@@ -189,7 +189,7 @@ class TRANSCODER(object):
     streaming_config = speech.types.StreamingRecognitionConfig(
         config=config,
         interim_results=True)
-    
+
     while self.queue.empty():
       pass
 
