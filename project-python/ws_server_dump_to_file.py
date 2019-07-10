@@ -3,13 +3,18 @@
 
 import asyncio
 import websockets
+import struct
 import sys
 
 async def server(websocket, path):
-  with open('output.raw', 'ab') as f:
+  print("Started server")
+  with open(sys.argv[1], 'wb') as f:
     while True:
       try:
+        print("Await websocket.recv()")
         data = await websocket.recv()
+        print(len(data))
+        # print(struct.unpack('c'*8192, data))
         f.write(data)
       except websockets.ConnectionClosed:
         print("Connection closed")
@@ -21,6 +26,7 @@ def main():
   loop = asyncio.get_event_loop()
 
   try:
+    print("Starting run until complete")
     loop.run_until_complete(websockets.serve(server, '0.0.0.0', 9000))
     loop.run_forever()
   except KeyboardInterrupt:
