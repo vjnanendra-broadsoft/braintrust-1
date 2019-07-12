@@ -14,6 +14,8 @@ let webex;
 let wsConnection;
 const AudioContext = window.AudioContext || window.webkitAudioContext
 const MAX_INT = Math.pow(2, 16 - 1) - 1;
+var onTrackCount = 0;
+var BYTES_PER_SAMPLE = 2;
 
 // First, let's wire our form fields up to localStorage so we don't have to
 // retype things everytime we reload the page.
@@ -135,26 +137,17 @@ function startTranscription(stream) {
   var processor = audioContext.createScriptProcessor(2048, 1, 1);
 
   processor.onaudioprocess = e => {
-      //   var floatSamples = e.inputBuffer.getChannelData(0);
-      //   // The samples are floats in range [-1, 1]. Convert to 16-bit signed
-      //   // integer.
-      //   if (wsConnection) {
-      //     wsConnection.send(Int16Array.from(floatSamples.map(function(n) {
-      //       return n * MAX_INT;
-      //     })));
-      // }
+    var floatSamples = e.inputBuffer.getChannelData(0);
+    var pcm16bit = new Int16Array(floatSamples.length);
 
-      var floatSamples = e.inputBuffer.getChannelData(0);
-      var pcm16bit = new Int16Array(floatSamples.length);
-  
-      for (var i = 0; i < floatSamples.length; ++i) {
-        var s = Math.max(-1, Math.min(1, floatSamples[i]));
-        pcm16bit[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-      }
-  
-      if (wsConnection) {
-        wsConnection.send(pcm16bit.buffer);
-      }
+    for (var i = 0; i < floatSamples.length; ++i) {
+      var s = Math.max(-1, Math.min(1, floatSamples[i]));
+      pcm16bit[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+
+    if (wsConnection) {
+      wsConnection.send(pcm16bit.buffer);
+    }
       
   }
   input.connect(processor)
@@ -195,12 +188,15 @@ function bindCallEvents(call) {
         if (track) {
           document.getElementById(`remote-view-${kind}`).srcObject = new MediaStream([track]);
           if (kind === 'audio') {
-            startTranscription(new MediaStream([track]));
+            onTrackCount++;
+            if (onTrackCount == 3) {
+              audioStream = new MediaStream([track]);
+              startTranscription(audioStream);
+              onTrackCount = 0;
+            }
           }
         }
       }
-    //startTranscription(call.remoteMediaStream)
-
     });
   });
 
